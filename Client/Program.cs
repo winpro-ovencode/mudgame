@@ -23,20 +23,25 @@ namespace Client
                 arg.Completed += OnConnected;
                 arg.RemoteEndPoint = _endpoint;
 
-                if (!_socket.ConnectAsync(arg))
-                {
-                    TryRecv();
-                }
+                _socket.Connect(_endpoint);
+                TryRecv();
                 
             } catch(Exception e)
             {
                 Console.WriteLine("접속 실패 : {0}", e.Message);
+                return false;
             }
             return true;
         }
 
         private void OnConnected(object sender, SocketAsyncEventArgs e)
         {
+            if(e.SocketError != SocketError.Success)
+            {
+                Console.WriteLine("접속이 실패하였습니다.");
+                return;
+            }
+
             Console.WriteLine("접속이 되었습니다.");
             TryRecv();
         }
@@ -80,7 +85,8 @@ namespace Client
 
         internal void Disconnect()
         {
-            if(_socket.Connected)
+            Console.WriteLine("서버와의 접속이 끊겼습니다.");
+            if (_socket.Connected)
                 _socket.Close();
         }
     }
@@ -93,6 +99,8 @@ namespace Client
             {
                 Console.Write("접속하실 IP를 입력하세요: ");
                 string input = Console.ReadLine();
+                if (input == "quit")
+                    return;
 
                 // 127.0.0.1:4444
 
@@ -103,24 +111,29 @@ namespace Client
                 Client client = new Client();
                 try
                 {
-                    client.Connect(inputs[0], int.Parse(inputs[1]));
+                    if (!client.Connect(inputs[0], int.Parse(inputs[1])))
+                        continue;
 
                     while (true)
                     {
-                        string msg = Console.ReadLine();
-                        if (msg == "quit")
+                        input = Console.ReadLine();
+                        if (input == "quit")
+                        {
+                            client.Disconnect();
                             return;
-                        else if(msg == "close")
+                        }
+                        else if (input == "close")
+                        {
+                            client.Disconnect();
                             break;
+                        }
 
-                        client.Write(msg);
+                        client.Write(input);
                     }
                 } catch(Exception ex)
                 {
                     Console.WriteLine("예외가 발생하였습니다: {0}", ex.Message);
                 }
-                client.Disconnect();
-                Console.WriteLine("서버와의 접속이 끊겼습니다.");
             }
         }
     }
