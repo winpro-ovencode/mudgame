@@ -28,6 +28,7 @@ namespace MudGameTuto
         {
             while(true)
             {
+                Console.WriteLine("ReadStart");
                 SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
                 arg.Completed += OnReceive;
                 arg.SetBuffer(inputBuffer, 0, inputBuffer.Length);
@@ -43,9 +44,13 @@ namespace MudGameTuto
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
         {
+            Console.WriteLine("OnRead");
+            if (!_socket.Connected)
+                return;
+
             //TIME_WAIT 발생시키지 않고 세션이 끊어졌다.
             //gracefully close
-            if(e.BytesTransferred == 0)
+            if (e.BytesTransferred == 0)
             {
                 _socket.Close();
                 OnClose(this, e);
@@ -58,6 +63,7 @@ namespace MudGameTuto
 
         public void ProcessRecv(SocketAsyncEventArgs e)
         {
+            Console.WriteLine("ProcessRecv");
             if (e.BytesTransferred == 0)
             {
                 _socket.Close();
