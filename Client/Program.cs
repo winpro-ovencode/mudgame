@@ -23,14 +23,9 @@ namespace Client
                 arg.Completed += OnConnected;
                 arg.RemoteEndPoint = _endpoint;
 
-                while(true)
+                if (!_socket.ConnectAsync(arg))
                 {
-                    if (!_socket.ConnectAsync(arg))
-                    {
-                        TryRecv();
-                        continue;
-                    }
-                    break;
+                    TryRecv();
                 }
                 
             } catch(Exception e)
