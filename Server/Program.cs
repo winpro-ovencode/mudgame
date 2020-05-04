@@ -119,9 +119,9 @@ namespace MudGameTuto
         {
             Session session = new Session();
             session.Open(e.AcceptSocket);
-            session.ReadStart();
             session.OnMessage += ClientOnMessage;
-            session.OnClose += ClientOnClose; 
+            session.OnClose += ClientOnClose;
+            session.ReadStart();
             SessionOpen(session);
             _sessions.Add(session);
         }
