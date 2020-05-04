@@ -19,10 +19,6 @@ namespace Client
              
             try
             {
-                SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
-                arg.Completed += OnConnected;
-                arg.RemoteEndPoint = _endpoint;
-
                 _socket.Connect(_endpoint);
                 TryRecv();
                 
@@ -32,18 +28,6 @@ namespace Client
                 return false;
             }
             return true;
-        }
-
-        private void OnConnected(object sender, SocketAsyncEventArgs e)
-        {
-            if(e.SocketError != SocketError.Success)
-            {
-                Console.WriteLine("접속이 실패하였습니다.");
-                return;
-            }
-
-            Console.WriteLine("접속이 되었습니다.");
-            TryRecv();
         }
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
