@@ -91,7 +91,7 @@ namespace MudGameTuto
 
         public void Listen(int backlog)
         {
-            _endPoint = new IPEndPoint(IPAddress.Any, 4444);
+            _endPoint = new IPEndPoint(IPAddress.Parse("0.0.0.0"), 4444);
             _socket = new Socket(_endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _socket.Bind(_endPoint);
             _socket.Listen(backlog);
