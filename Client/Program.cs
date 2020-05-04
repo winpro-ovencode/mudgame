@@ -22,8 +22,19 @@ namespace Client
                 SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
                 arg.Completed += OnConnected;
                 arg.RemoteEndPoint = _endpoint;
-                if (!_socket.ConnectAsync(arg))
-                    return false;
+
+                while(true)
+                {
+                    if (!_socket.ConnectAsync(arg))
+                    {
+                        TryRecv();
+                        continue;
+                    }
+
+                    Console.WriteLine("접속이 되었습니다.");
+                    break;
+                }
+                
             } catch(Exception e)
             {
                 Console.WriteLine("접속 실패 : {0}", e.Message);
@@ -34,20 +45,7 @@ namespace Client
         private void OnConnected(object sender, SocketAsyncEventArgs e)
         {
             Console.WriteLine("접속이 되었습니다.");
-
-            while(true)
-            {
-                SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
-                arg.Completed += OnReceive;
-                arg.SetBuffer(inputBuffer, 0, inputBuffer.Length);
-                if(!_socket.ReceiveAsync(arg))
-                {
-                    ProcessRecv(arg);
-                    continue;
-                }
-
-                break;
-            }
+            TryRecv();
         }
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
@@ -56,12 +54,17 @@ namespace Client
                 return;
 
             ProcessRecv(e);
-            while(true)
+            TryRecv();
+        }
+
+        private void TryRecv()
+        {
+            while (true)
             {
                 SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
                 arg.Completed += OnReceive;
                 arg.SetBuffer(inputBuffer, 0, inputBuffer.Length);
-                if(!_socket.ReceiveAsync(arg))
+                if (!_socket.ReceiveAsync(arg))
                 {
                     ProcessRecv(arg);
                     continue;
