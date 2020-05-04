@@ -30,8 +30,6 @@ namespace Client
                         TryRecv();
                         continue;
                     }
-
-                    Console.WriteLine("접속이 되었습니다.");
                     break;
                 }
                 
