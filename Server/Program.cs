@@ -216,6 +216,7 @@ namespace MudGameTuto
     {
         static void Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("Hello World!");
             Server server = new Server();
             Adapter adapter = new Adapter(server);
