@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using ServiceStack.OrmLite;
 
 namespace MudGameTuto
 {
@@ -14,7 +15,8 @@ namespace MudGameTuto
         private byte[] inputBuffer = new byte[8192];
         private byte[] outputBuffer = new byte[8192];
 
-        public object tag;
+        public IPrompt tag;
+        public AuthInfo authInfo;
 
         public EventHandler<SocketAsyncEventArgs> OnMessage;
         public EventHandler<SocketAsyncEventArgs> OnClose;
@@ -32,6 +34,7 @@ namespace MudGameTuto
                 SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
                 arg.Completed += OnReceive;
                 arg.SetBuffer(inputBuffer, 0, inputBuffer.Length);
+
                 if(!_socket.ReceiveAsync(arg))
                 {
                     ProcessRecv(arg);
@@ -40,6 +43,20 @@ namespace MudGameTuto
 
                 break;
             }
+        }
+
+        public void ProcessRecv(SocketAsyncEventArgs e)
+        {
+            Console.WriteLine("ProcessRecv");
+            if (e.BytesTransferred == 0)
+            {
+                _socket.Close();
+                OnClose(this, e);
+                return;
+            }
+
+            Console.WriteLine("{0} bytes 전송됨", e.BytesTransferred);
+            OnMessage(this, e);
         }
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
@@ -59,20 +76,6 @@ namespace MudGameTuto
             
             ProcessRecv(e);
             ReadStart();
-        }
-
-        public void ProcessRecv(SocketAsyncEventArgs e)
-        {
-            Console.WriteLine("ProcessRecv");
-            if (e.BytesTransferred == 0)
-            {
-                _socket.Close();
-                OnClose(this, e);
-                return;
-            }
-
-            Console.WriteLine("{0} bytes 전송됨", e.BytesTransferred);
-            OnMessage(this, e);
         }
 
         public void Send(string message)
@@ -105,7 +108,7 @@ namespace MudGameTuto
 
         public void Listen(int backlog)
         {
-            _endPoint = new IPEndPoint(IPAddress.Any, 4444);
+            _endPoint = new IPEndPoint(IPAddress.Any, 5555);
             _socket = new Socket(_endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _socket.Bind(_endPoint);
             _socket.Listen(backlog);
@@ -143,7 +146,7 @@ namespace MudGameTuto
         private void OnAccept(object sender, SocketAsyncEventArgs e)
         { // WorkerThread
             var client = e.AcceptSocket;
-            Console.WriteLine("접속됨 {0}", client.RemoteEndPoint.ToString());
+            //Console.WriteLine("접속됨 {0}", client.RemoteEndPoint.ToString());
             ProcessAccept(e);
             StartAccept();
             Console.WriteLine("접속 완료");
@@ -177,45 +180,61 @@ namespace MudGameTuto
         {
             foreach(var s in _sessions)
             {
+                var prompt = GetPromptType(s.tag);
+
+                if(prompt != PromptType.Game)
+                    continue;
+
                 s.Send(arg);
             }
         }
+
+        private PromptType GetPromptType(IPrompt prompt) //AuthPrompt GamePrompt
+        {
+            var attrs = prompt.GetType().GetCustomAttributes(true);
+
+            if(attrs.Length == 0)
+                return PromptType.None;
+
+            var att = (PromptAttribute) attrs[0];
+            
+            return att.promptType;
+        }
+        
     }
 
-    class Adapter
+    enum AdaperState
     {
-        Server owner;
-        public Adapter(Server server)
-        {
-            owner = server;
-            server.SessionOpen = SessionOpen;
-            server.SessionClose = SessionClose;
-            server.SessionPacket = SessionPacket;
-        }
+        None,
+        Auth,
+        Game,
+    }
 
-        private void SessionPacket(Session arg1, string arg2)
-        {
-            IPrompt prompt = (IPrompt) arg1.tag;
-            prompt.Dispatch(arg1, arg2);
-        }
-
-        private void SessionClose(Session obj)
-        {
-        }
-
-        protected void SessionOpen(Session s)
-        {
-            Console.WriteLine("SessionOpen");
-            var prompt = new AuthPrompt(owner);
-            s.tag = prompt;
-            s.Send("계정을 입력하세요. : ");
-        }
+    public enum AdapterResultType
+    {
+        None,
+        Progress,
+        Next,
+        Prev,
+        Exception,
+        Quit,
     }
 
     class Program
     {
         static void Main(string[] args)
         {
+            try
+            {
+                using(var db = DBContext.Open())
+                {
+                    db.Select<t_account>();
+                }
+            } catch(Exception e)
+            {
+                Console.WriteLine( e.Message);
+            }
+
             Console.WriteLine("Hello World!");
             Server server = new Server();
             Adapter adapter = new Adapter(server);

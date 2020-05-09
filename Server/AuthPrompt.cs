@@ -22,14 +22,34 @@ namespace MudGameTuto
     }
     public interface IPrompt
     {
-        void Dispatch(Session s, string arg);
+        AdapterResultType Dispatch(Session s, string arg);
     }
-    
+
+    public class PromptAttribute : Attribute
+    {
+        internal PromptType promptType;
+
+        public PromptAttribute(PromptType type)
+        {
+            promptType = type;
+        }
+    }
+
+    public enum PromptType
+    {
+        Auth,
+        MakeAccount,
+        Game,
+        None,
+    }
+
+    [Prompt(PromptType.Auth)]
     public class AuthPrompt : IPrompt
     {
         private Server owner;
         private AuthPromptState state;
         private Dictionary<AuthPromptState, string> cmd = new Dictionary<AuthPromptState, string>();
+        private Session session;
 
         public Server OwnerServer {
             get 
@@ -38,13 +58,19 @@ namespace MudGameTuto
             }
         }
             
-        public AuthPrompt(Server server)
+        public AuthPrompt(Server server, Session s)
         {
             this.owner = server;
+            this.session = s;
+            s.Send("동물의 땅에 접속한 것을 환영합니다.\r\n" +
+                "처음 접속하셨으면 '손님'을 입력하시고 기존 사용자면 계정을 입력해주세요.\r\n");
+            s.Send("계정을 입력하세요. : ");
         }
 
-        public void Dispatch(Session s, string arg)
+        public AdapterResultType Dispatch(Session s, string arg)
         {
+            AdapterResultType result = AdapterResultType.Progress;
+
             switch(state)
             {
                 case AuthPromptState.Ready:
@@ -80,12 +106,16 @@ namespace MudGameTuto
                 case AuthPromptState.Password:
                     cmd.Add(state, arg);
                     state = AuthPromptState.End;
-                    Login(s);
+                    if(Login(s))
+                        result = AdapterResultType.Next;
+
                     break;
             }
+
+            return result;
         }
     
-        private void Login(Session s)
+        private bool Login(Session s)
         {
             s.Send("인증 확인중입니다...\r\n");
             using(var con = DBContext.Open())
@@ -98,17 +128,17 @@ namespace MudGameTuto
 
                 if(acc == null)
                 {
-                    s.Send("계정이나 비밀번호가 틀립니다. 계정을 다시 입력하세요 : ");
+                    s.Send("계정이나 비밀번호가 틀립니다.\r\n계정을 다시 입력하세요 : ");
                     state = AuthPromptState.Ready;
                     cmd.Clear();
-                    return;
+                    return false;
                 }
+
                 s.Send("인증 완료 되었습니다.\r\n");
                 owner.Broadcast($"{accountId}님이 접속하셨습니다.\r\n");
 
-                AuthInfo authInfo = new AuthInfo();
-                authInfo.accountId = accountId;
-                s.tag = new GamePrompt(owner, authInfo, s);
+                s.authInfo.accountId = accountId;
+                return true;
             }
         }
 
@@ -121,7 +151,7 @@ namespace MudGameTuto
 
             if(password != password2)
             {
-                s.Send("비밀번호가 서로 틀립니다. 다시 입력하세요. :");
+                s.Send("비밀번호가 서로 틀립니다.\r\n다시 입력하세요. :");
                 state = AuthPromptState.MakePassword;
                 cmd.Remove(AuthPromptState.MakePassword);
                 cmd.Remove(AuthPromptState.MakePassword2);
@@ -151,4 +181,6 @@ namespace MudGameTuto
             cmd.Clear();
         }
     }
+
+    
 }

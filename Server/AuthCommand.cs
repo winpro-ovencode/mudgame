@@ -11,13 +11,7 @@ namespace MudGameTuto
         Password,
     }
 
-    public enum PromptType
-    {
-        Auth,
-        MakeAccount,
-        Game,
-    }
-
+   
     public class AuthCommand : Command
     {
         [Command]

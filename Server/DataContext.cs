@@ -2,7 +2,7 @@ using ServiceStack.OrmLite;
 
 public class DBContext
 {
-    static OrmLiteConnectionFactory factory = new OrmLiteConnectionFactory("Server=15.164.99.198;Database=study;User Id=study;Password=0000;", MySqlDialect.Provider); // ConnectionString
+    static OrmLiteConnectionFactory factory = new OrmLiteConnectionFactory("Server=52.79.44.254;Database=study;User Id=root;Password=ovencode;", MySqlDialect.Provider); // ConnectionString
     public static System.Data.IDbConnection Open()
     {
         var con = factory.CreateDbConnection();

@@ -30,15 +30,6 @@ namespace Client
             return true;
         }
 
-        private void OnReceive(object sender, SocketAsyncEventArgs e)
-        {
-            if(!_socket.Connected)
-                return;
-
-            ProcessRecv(e);
-            TryRecv();
-        }
-
         private void TryRecv()
         {
             while (true)
@@ -53,6 +44,15 @@ namespace Client
                 }
                 break;
             }
+        }
+
+        private void OnReceive(object sender, SocketAsyncEventArgs e)
+        {
+            if(!_socket.Connected)
+                return;
+
+            ProcessRecv(e);
+            TryRecv();
         }
 
         private void ProcessRecv(SocketAsyncEventArgs e)
