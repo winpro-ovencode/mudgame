@@ -5,7 +5,7 @@ namespace MudGameTuto
     public class GameCommand : Command
     {
         [Command]
-        public void Entry(Player player)
+        public void Entry(Session session)
         {
         }
     }

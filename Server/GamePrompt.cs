@@ -1,29 +1,36 @@
 using MudGameTuto;
 
-[Prompt(PromptType.Game)]
-public class GamePrompt : IPrompt
+namespace MudGameTuto
 {
-    Server owner;
-    Session _session;
-
-    public GamePrompt(Server owner, Session s)
+    [Prompt(PromptType.Game)]
+    public class GamePrompt : IPrompt
     {
-        this.owner = owner;
-        _session = s;
-        s.Send("[Command]: ");
+        Server owner;
+        Session _session;
+        Player _player;
+
+        public GamePrompt(Server owner, Session s)
+        {
+            this.owner = owner;
+            _session = s;
+
+            Player p = new Player();
+            p.name = s.authInfo.name;
+            s.Send("[Command]: ");
+        }
+
+        public AdapterResultType Dispatch(Session s, string arg)
+        {
+            AdapterResultType result = AdapterResultType.Progress;
+            owner.Broadcast(string.Format("{0}: {1}\r\n", s.authInfo.accountId, arg));
+            _session.Send("[Command]: ");
+            return result;
+        }
     }
 
-    public AdapterResultType Dispatch(Session s, string arg)
+    public class AuthInfo
     {
-        AdapterResultType result = AdapterResultType.Progress;
-        owner.Broadcast(string.Format("{0}: {1}\r\n", s.authInfo.accountId, arg));
-        _session.Send("[Command]: ");
-        return result;
+        public string accountId;
+        public string ipAddress;
     }
-}
-
-public class AuthInfo
-{
-    public string accountId;
-    public string ipAddress;
 }

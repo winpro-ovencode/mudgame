@@ -1,16 +1,28 @@
 using System;
+using System.Collections.Generic;
 
 namespace MudGameTuto
 {
     class Adapter
     {
+        Zone zone;
         Server owner;
+        List<Player> player = new List<Player>();
+
         public Adapter(Server server)
         {
             owner = server;
             server.SessionOpen = SessionOpen;
             server.SessionClose = SessionClose;
             server.SessionPacket = SessionPacket;
+        }
+
+        private Player CreatePlayer(Session s)
+        {
+            Player p = new Player();
+            p.session = s;
+            player.Add(p);
+            return p;
         }
 
         private void SessionPacket(Session s, string arg)
