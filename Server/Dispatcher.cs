@@ -2,66 +2,96 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-public struct TargetInfo
+namespace MudGameTuto
 {
-    public Command commnad;
-    public Type parameter;
-    public MethodInfo method;
-    
-}
-
-public class Dispatcher
-{
-    Dictionary<string, TargetInfo> protocolDic = new Dictionary<string, TargetInfo>();
-
-    void RegisterFromAssembly()
+    public struct TargetInfo
     {
-        Assembly assembly = GetType().Assembly;
+        public Command commnad;
+        public Type parameter;
+        public MethodInfo method;
+        
+    }
 
-        foreach(var type in assembly.GetTypes())
+    public class Dispatcher
+    {
+        Dictionary<string, TargetInfo> protocolDic = new Dictionary<string, TargetInfo>();
+
+        public bool Dispatch(Command cmd, Player player, string arg)
         {
-            if( !Attribute.IsDefined(type, typeof(CommandGroupAttribute)) )
-                continue;
+            var args = arg.Split(' ');
 
-            Register(type);
+            if(!protocolDic.ContainsKey(args[0]))
+                return false;
+
+            var p = protocolDic[args[0]];
+
+            p.method.Invoke(cmd, new object[] { player, arg });
+            return true;
+        }
+
+        public void RegisterFromAssembly()
+        {
+            Assembly assembly = GetType().Assembly;
+
+            foreach(var type in assembly.GetTypes())
+            {
+                if( !Attribute.IsDefined(type, typeof(CommandGroupAttribute)) )
+                    continue;
+
+                Register(type);
+            }
+        }
+
+        void Register(Type type)
+        {
+            foreach(MethodInfo field in type.GetMethods())
+            {
+                object[] attr = field.GetCustomAttributes(typeof(CommandAttribute), true);
+                if(attr.Length == 0)
+                    continue;
+
+                CommandAttribute targetAttr = (CommandAttribute)attr[0];
+                TargetInfo info = new TargetInfo();
+                info.commnad = (Command)Activator.CreateInstance(type);
+                info.method = field;
+                info.parameter = field.GetParameters()[1].ParameterType;
+
+                foreach(var c in targetAttr.cmds)
+                {
+                    protocolDic.Add(c, info);
+                }
+            }
         }
     }
 
-    void Register(Type type)
+    public class ProtocolAttribute
     {
-        foreach(MethodInfo field in type.GetMethods())
+    }
+
+    public class Command
+    {
+        public virtual void Entry(Player player)
         {
-            object[] attr = field.GetCustomAttributes(typeof(CommandAttribute), true);
-            if(attr.Length == 0)
-                continue;
-
-            CommandAttribute targetAttr = (CommandAttribute)attr[0];
-            TargetInfo info = new TargetInfo();
-            info.commnad = (Command)Activator.CreateInstance(type);
-            info.method = field;
-            info.parameter = field.GetParameters()[1].ParameterType;
-
-            object[] attrs = info.parameter.GetCustomAttributes(typeof(ProtocolAttribute), true);
-            if(attrs.Length == 0)
-                continue; 
-
 
         }
     }
-}
 
-public class ProtocolAttribute
-{
-}
+    public class CommandAttribute : Attribute
+    {
+        public List<string> cmds = new List<string>();
 
-public class Command
-{
-}
+        public CommandAttribute(string cmd)
+        {
+            cmds.Add(cmd);
+        }
 
-public class CommandAttribute : Attribute
-{
-}
+        public CommandAttribute(params string[] cmd )
+        {
+            cmds.AddRange(cmd);
+        }
+    }
 
-public class CommandGroupAttribute : Attribute
-{
+    public class CommandGroupAttribute : Attribute
+    {
+    }
 }

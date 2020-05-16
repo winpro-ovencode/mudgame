@@ -15,6 +15,7 @@ namespace MudGameTuto
             server.SessionOpen = SessionOpen;
             server.SessionClose = SessionClose;
             server.SessionPacket = SessionPacket;
+            zone = Zone.CreateZone();
         }
 
         private Player CreatePlayer(Session s)
@@ -35,7 +36,7 @@ namespace MudGameTuto
                 switch(GetPromptType(prompt))
                 {
                     case PromptType.Auth:
-                        s.tag = new GamePrompt(owner, s);
+                        s.tag = new GamePrompt(owner, zone, s);
                         break;
 
                     case PromptType.Game:

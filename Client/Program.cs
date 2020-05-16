@@ -34,25 +34,46 @@ namespace Client
         {
             while (true)
             {
+                try
+                {
+                if(!_socket.Connected)
+                    break;
+
                 SocketAsyncEventArgs arg = new SocketAsyncEventArgs();
                 arg.Completed += OnReceive;
                 arg.SetBuffer(inputBuffer, 0, inputBuffer.Length);
                 if (!_socket.ReceiveAsync(arg))
                 {
+                    if(arg.BytesTransferred == 0)
+                    {
+                        _socket.Close();
+                        break;
+                    }
+
                     ProcessRecv(arg);
                     continue;
+                }
+                } catch(Exception e )
+                {
+                    Console.WriteLine("에러 " + e.Message);
                 }
                 break;
             }
         }
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
-        {
-            if(!_socket.Connected)
-                return;
-
-            ProcessRecv(e);
-            TryRecv();
+        { 
+            try
+            {
+                if(_socket == null || !_socket.Connected)
+                    return;
+                
+                    ProcessRecv(e);
+                    TryRecv();
+            } catch(Exception ee)
+            {
+                Console.WriteLine("에러: " + ee.Message);
+            }
         }
 
         private void ProcessRecv(SocketAsyncEventArgs e)
@@ -71,7 +92,10 @@ namespace Client
         {
             Console.WriteLine("서버와의 접속이 끊겼습니다.");
             if (_socket.Connected)
+            {
                 _socket.Close();
+                _socket = null;
+            }
         }
     }
 
@@ -110,9 +134,10 @@ namespace Client
                         {
                             client.Disconnect();
                             break;
+                        } else
+                        {
+                            client.Write(input);
                         }
-
-                        client.Write(input);
                     }
                 } catch(Exception ex)
                 {

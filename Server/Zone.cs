@@ -19,6 +19,7 @@ namespace MudGameTuto
 
         public void Enter(Mobile mob)
         {
+            EntryRoom.LookAt(mob);
             EntryRoom.Enter(mob);
         }
     }

@@ -218,6 +218,7 @@ namespace MudGameTuto
         Prev,
         Exception,
         Quit,
+        Leave,
     }
 
     class Program

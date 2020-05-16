@@ -23,6 +23,7 @@ namespace MudGameTuto
     public interface IPrompt
     {
         AdapterResultType Dispatch(Session s, string arg);
+        void Enter(IPrompt roomSettingPrompt);
     }
 
     public class PromptAttribute : Attribute
@@ -179,6 +180,11 @@ namespace MudGameTuto
             s.Send($"{accountId} 계정이 생성되었습니다. 접속하실 계정을 입력하세요: ");
             state = AuthPromptState.Ready;
             cmd.Clear();
+        }
+
+        public void Enter(IPrompt roomSettingPrompt)
+        {
+            throw new NotImplementedException();
         }
     }
 
